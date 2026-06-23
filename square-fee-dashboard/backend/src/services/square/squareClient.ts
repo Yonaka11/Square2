@@ -18,11 +18,31 @@ export interface SquareConfig {
   locationId: string;
 }
 
+// Public Square environment names (NOT secrets). Centralized so the rest of the
+// file references constants instead of repeating the literal everywhere.
+export type SquareEnv = 'production' | 'sandbox'; // pragma: allowlist secret
+const PROD_ENV: SquareEnv = 'production'; // pragma: allowlist secret
+const SANDBOX_ENV: SquareEnv = 'sandbox';
+
+/**
+ * Normalize a raw SQUARE_ENVIRONMENT value to a canonical environment.
+ * Tolerates casing, surrounding whitespace/quotes, and common aliases so a
+ * small config typo doesn't silently point a live token at the sandbox host
+ * (which returns 401).
+ */
+export function resolveEnvironment(raw: string | undefined): SquareEnv {
+  const v = (raw ?? '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .toLowerCase();
+  return v === PROD_ENV || v === 'prod' ? PROD_ENV : SANDBOX_ENV;
+}
+
 export function getSquareConfig(): SquareConfig {
   return {
-    accessToken: process.env.SQUARE_ACCESS_TOKEN ?? '',
-    environment: process.env.SQUARE_ENVIRONMENT ?? 'sandbox',
-    locationId: process.env.SQUARE_LOCATION_ID ?? '',
+    accessToken: (process.env.SQUARE_ACCESS_TOKEN ?? '').trim(),
+    environment: resolveEnvironment(process.env.SQUARE_ENVIRONMENT),
+    locationId: (process.env.SQUARE_LOCATION_ID ?? '').trim(),
   };
 }
 
@@ -32,9 +52,9 @@ export function hasSquareCredentials(): boolean {
   return Boolean(cfg.accessToken && cfg.locationId);
 }
 
-/** Base URL for the configured environment. */
+/** Base URL for the configured environment (normalized). */
 export function squareBaseUrl(environment = getSquareConfig().environment): string {
-  return environment === 'production'
+  return resolveEnvironment(environment) === PROD_ENV
     ? 'https://connect.squareup.com'
     : 'https://connect.squareupsandbox.com';
 }

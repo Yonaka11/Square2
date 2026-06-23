@@ -25,6 +25,12 @@ export async function syncCatalog(): Promise<SyncResult> {
   const { categories, items } = normalizeCatalog(objects);
   const now = new Date().toISOString();
 
+  // Only keep category references that actually exist as CATEGORY objects, so we
+  // never violate the foreign keys on catalog_items / catalog_variations /
+  // order_line_items (an item can reference an archived/absent category).
+  const validCategoryIds = new Set(categories.map((c) => c.id));
+  const safeCategory = (id: string | null): string | null => (id && validCategoryIds.has(id) ? id : null);
+
   const upsert = db.transaction(() => {
     const upsertCategory = db.prepare(
       `INSERT INTO categories (id, name) VALUES (?, ?)
@@ -48,10 +54,11 @@ export async function syncCatalog(): Promise<SyncResult> {
        ON CONFLICT(variation_id) DO UPDATE SET item_id=excluded.item_id, category_id=excluded.category_id`
     );
     for (const it of items) {
+      const catId = safeCategory(it.category_id);
       upsertItem.run({
         id: it.id,
         name: it.name,
-        category_id: it.category_id,
+        category_id: catId,
         price_money: it.price_money,
         sku: it.sku,
         barcode: it.barcode,
@@ -61,7 +68,7 @@ export async function syncCatalog(): Promise<SyncResult> {
         created_at: now,
         updated_at: now,
       });
-      for (const vid of it.variation_ids) upsertVariation.run(vid, it.id, it.category_id);
+      for (const vid of it.variation_ids) upsertVariation.run(vid, it.id, catId);
     }
   });
   upsert();
