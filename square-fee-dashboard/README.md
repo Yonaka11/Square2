@@ -45,6 +45,21 @@ square-fee-dashboard/
 
 ---
 
+## Quick start (one command)
+
+From the `square-fee-dashboard/` folder:
+
+```bash
+npm run install:all   # installs backend + frontend deps
+npm run dev           # runs backend (8080) AND frontend (5173) together
+```
+
+Then open **http://localhost:5173**. (No Square credentials needed — mock data is
+auto-seeded on first run.) Root scripts also available: `npm run seed`,
+`npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+
+Prefer running each service in its own terminal? Use the two-terminal flow below.
+
 ## Setup & run (two terminals)
 
 ### 1. Backend

@@ -9,12 +9,15 @@ that as the source of truth. Notes below are non-obvious caveats only.
 
 ### Services & how to run
 
+- **One command (preferred)**: from `square-fee-dashboard/`, run `npm run dev` to
+  start backend + frontend together (uses `concurrently`). `npm run install:all`
+  installs both. Root also exposes `seed`, `test`, `lint`, `typecheck`, `build`.
 - **Backend** (`square-fee-dashboard/backend`, Express + TypeScript on port 8080):
   `npm run dev`. Run it from the `backend/` directory.
 - **Frontend** (`square-fee-dashboard/frontend`, Vite + React on port 5173):
   `npm run dev`. The Vite dev server **proxies `/api` to `http://localhost:8080`**
   (see `vite.config.ts`), so the backend must be running for the UI to load data.
-  Start the backend first.
+  When starting services separately, start the backend first.
 
 ### Non-obvious caveats
 
