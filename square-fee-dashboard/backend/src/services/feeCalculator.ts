@@ -60,6 +60,45 @@ export interface MonthlyFeeReport {
   };
 }
 
+export interface FeeFormulaInputs {
+  grossSales: number;
+  refunds: number;
+  discounts: number;
+  excludedCategorySales: number;
+  taxes: number;
+}
+
+export interface FeeFormulaResult {
+  discountDeduction: number;
+  taxDeduction: number;
+  feeLiableSales: number;
+  feeOwed: number;
+}
+
+/**
+ * Pure fee math (no I/O) so it can be unit-tested directly. Applies the rule:
+ *
+ *   fee-liable = gross - refunds - (discounts if discountsReduce)
+ *                       - excludedCategorySales - (taxes if taxesExcluded)
+ *   fee owed   = fee-liable * feePercentage / 100
+ *
+ * Fee-liable sales are clamped at 0 so the fee can never be negative.
+ */
+export function computeFeeFromAggregates(
+  inputs: FeeFormulaInputs,
+  rules: Pick<FeeRules, 'fee_percentage' | 'discounts_reduce' | 'taxes_excluded'>
+): FeeFormulaResult {
+  const discountDeduction = rules.discounts_reduce ? inputs.discounts : 0;
+  const taxDeduction = rules.taxes_excluded ? inputs.taxes : 0;
+
+  let feeLiableSales =
+    inputs.grossSales - inputs.refunds - discountDeduction - inputs.excludedCategorySales - taxDeduction;
+  if (feeLiableSales < 0) feeLiableSales = 0;
+
+  const feeOwed = percentageOfCents(feeLiableSales, rules.fee_percentage);
+  return { discountDeduction, taxDeduction, feeLiableSales, feeOwed };
+}
+
 /** Read the singleton fee rules row and normalize the JSON/boolean columns. */
 export function getFeeRules(): FeeRules {
   const row = db.prepare('SELECT * FROM fee_rules WHERE id = 1').get() as any;
@@ -149,16 +188,11 @@ export function computeMonthlyFeeReport(startDate: string, endDate: string): Mon
     .prepare(`SELECT COUNT(*) AS n FROM orders WHERE created_at >= ? AND created_at <= ?`)
     .get(startIso, endIso) as { n: number };
 
-  // --- Apply the fee formula -------------------------------------------------
-  const discountDeduction = rules.discounts_reduce ? discounts : 0;
-  const taxDeduction = rules.taxes_excluded ? taxes : 0;
-
-  let feeLiableSales =
-    grossSales - refunds - discountDeduction - excludedCategorySales - taxDeduction;
-  // Never let fee-liable sales go negative.
-  if (feeLiableSales < 0) feeLiableSales = 0;
-
-  const feeOwed = percentageOfCents(feeLiableSales, rules.fee_percentage);
+  // --- Apply the fee formula (pure, unit-tested) -----------------------------
+  const { feeLiableSales, feeOwed } = computeFeeFromAggregates(
+    { grossSales, refunds, discounts, excludedCategorySales, taxes },
+    rules
+  );
 
   return {
     startDate,
