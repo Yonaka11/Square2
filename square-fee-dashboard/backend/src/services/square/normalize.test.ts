@@ -8,6 +8,7 @@ import {
   normalizePayment,
   normalizeRefund,
   normalizeCatalog,
+  resolveItemCategoryId,
   type SquareOrder,
   type SquarePayment,
   type SquareRefund,
@@ -97,6 +98,40 @@ test('normalizeRefund resolves original sale date with fallback', () => {
 
   const noResolver = normalizeRefund(r);
   assert.equal(noResolver.order_created_at, '2026-06-05T10:00:00Z'); // falls back to refund date
+});
+
+test('resolveItemCategoryId follows reporting -> categories[] -> legacy precedence', () => {
+  // reporting_category wins
+  assert.equal(
+    resolveItemCategoryId({ reporting_category: { id: 'REP' }, categories: [{ id: 'ARR' }], category_id: 'LEG' }),
+    'REP'
+  );
+  // newer categories[] used when no reporting_category
+  assert.equal(resolveItemCategoryId({ categories: [{ id: 'ARR' }], category_id: 'LEG' }), 'ARR');
+  // legacy category_id as last resort
+  assert.equal(resolveItemCategoryId({ category_id: 'LEG' }), 'LEG');
+  // nothing present -> null
+  assert.equal(resolveItemCategoryId({ name: 'x' }), null);
+  // empty categories array -> falls through
+  assert.equal(resolveItemCategoryId({ categories: [], category_id: 'LEG' }), 'LEG');
+});
+
+test('normalizeCatalog reads the production categories[] array', () => {
+  const objects: SquareCatalogObject[] = [
+    {
+      type: 'ITEM',
+      id: 'ITEM_MOCHA',
+      item_data: {
+        name: 'Mocha',
+        categories: [{ id: 'CAT_COFFEE', ordinal: 1 }],
+        variations: [{ id: 'VAR_MOCHA', item_variation_data: { sku: 'COF-009', price_money: { amount: 545 } } }],
+      },
+    },
+  ];
+  const { items } = normalizeCatalog(objects);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].category_id, 'CAT_COFFEE');
+  assert.deepEqual(items[0].variation_ids, ['VAR_MOCHA']);
 });
 
 test('normalizeCatalog splits categories and items, maps variations', () => {
