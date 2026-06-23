@@ -5,6 +5,7 @@ import type {
   DashboardOverview,
   FeeRules,
   MonthlyFeeReport,
+  ReportSnapshot,
   SalesAnalytics,
   SyncStatus,
 } from '../types';
@@ -40,6 +41,7 @@ export const api = {
     request<SalesAnalytics>(`/reports/sales-analytics?startDate=${startDate}&endDate=${endDate}`),
   saveSnapshot: (startDate: string, endDate: string) =>
     request(`/reports/snapshots`, { method: 'POST', body: JSON.stringify({ startDate, endDate }) }),
+  getSnapshots: () => request<ReportSnapshot[]>(`/reports/snapshots`),
   getCatalogItems: () => request<CatalogItem[]>(`/catalog/items`),
   createCatalogItem: (payload: Record<string, unknown>) =>
     request<CatalogItem>(`/catalog/items`, { method: 'POST', body: JSON.stringify(payload) }),

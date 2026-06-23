@@ -44,6 +44,14 @@ export interface MonthlyFeeReport {
   };
 }
 
+export interface ReportSnapshot {
+  id: number;
+  startDate: string;
+  endDate: string;
+  feeOwed: number;
+  createdAt: string;
+}
+
 export interface SalesAnalytics {
   startDate: string;
   endDate: string;

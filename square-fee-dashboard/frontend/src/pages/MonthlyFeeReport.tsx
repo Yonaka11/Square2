@@ -5,7 +5,7 @@ import MetricCard from '../components/MetricCard';
 import { Loading, ErrorState } from '../components/StateViews';
 import { api } from '../api/client';
 import { formatCents, formatPercent } from '../lib/format';
-import type { MonthlyFeeReport as Report } from '../types';
+import type { MonthlyFeeReport as Report, ReportSnapshot } from '../types';
 
 export default function MonthlyFeeReport() {
   const [range, setRange] = useState<DateRange>(defaultMonthRange());
@@ -13,6 +13,12 @@ export default function MonthlyFeeReport() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [snapshots, setSnapshots] = useState<ReportSnapshot[]>([]);
+
+  const loadSnapshots = () => {
+    api.getSnapshots().then(setSnapshots).catch(() => setSnapshots([]));
+  };
+  useEffect(loadSnapshots, []);
 
   const load = () => {
     setLoading(true);
@@ -31,6 +37,7 @@ export default function MonthlyFeeReport() {
     try {
       await api.saveSnapshot(range.startDate, range.endDate);
       setSaveMsg('Report snapshot saved.');
+      loadSnapshots();
     } catch (e: any) {
       setSaveMsg(`Save failed: ${e.message}`);
     }
@@ -139,6 +146,38 @@ export default function MonthlyFeeReport() {
           </div>
         </>
       )}
+
+      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold mb-4">Saved Report Snapshots</h2>
+        {snapshots.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            No snapshots saved yet. Use “Save Snapshot” to store the current report.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500 border-b border-slate-200">
+                  <th className="py-2 pr-4">Saved At</th>
+                  <th className="py-2 px-4">Start</th>
+                  <th className="py-2 px-4">End</th>
+                  <th className="py-2 pl-4 text-right">Fee Owed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {snapshots.map((s) => (
+                  <tr key={s.id}>
+                    <td className="py-2 pr-4">{new Date(s.createdAt).toLocaleString()}</td>
+                    <td className="py-2 px-4">{s.startDate}</td>
+                    <td className="py-2 px-4">{s.endDate}</td>
+                    <td className="py-2 pl-4 text-right font-medium">{formatCents(s.feeOwed)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </Layout>
   );
 }
