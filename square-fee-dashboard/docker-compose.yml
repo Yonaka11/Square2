@@ -1,0 +1,22 @@
+# Single-service deployment for the Square Fee Dashboard.
+# Usage: docker compose up --build
+# The local ./data folder is mounted so the SQLite database persists.
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Leave Square vars blank to run on auto-seeded mock data.
+      SQUARE_ACCESS_TOKEN: ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_ENVIRONMENT: ${SQUARE_ENVIRONMENT:-sandbox}
+      SQUARE_LOCATION_ID: ${SQUARE_LOCATION_ID:-}
+      # Set ADMIN_PASSWORD to require admin sign-in; leave blank to disable auth.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      # Webhook verification (optional).
+      SQUARE_WEBHOOK_SIGNATURE_KEY: ${SQUARE_WEBHOOK_SIGNATURE_KEY:-}
+      SQUARE_WEBHOOK_URL: ${SQUARE_WEBHOOK_URL:-}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
