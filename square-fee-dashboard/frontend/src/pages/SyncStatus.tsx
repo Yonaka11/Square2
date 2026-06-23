@@ -78,8 +78,8 @@ export default function SyncStatus() {
         <div className="space-y-6">
           <div className={`rounded-lg px-4 py-3 text-sm ${data.squareConfigured ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
             {data.squareConfigured
-              ? 'Square credentials detected. Real sync endpoints are ready (sync logic is still a placeholder in v1).'
-              : 'No Square credentials configured — running on mock data. Add credentials in backend/.env to enable Square Sandbox sync.'}
+              ? 'Square credentials detected. Click "Sync from Square" to import catalog, orders, payments, and refunds (read-only).'
+              : 'No Square credentials configured — running on mock data. Add credentials in backend/.env to enable Square sync.'}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
