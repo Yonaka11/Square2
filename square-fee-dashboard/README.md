@@ -134,6 +134,41 @@ fully-commented implementation.
 
 ---
 
+## Production deployment (single port)
+
+Run the whole app (API + built UI) on one port:
+
+```bash
+# From square-fee-dashboard/
+npm run start          # builds the frontend, then serves it + API on :8080
+# open http://localhost:8080
+```
+
+Or with Docker:
+
+```bash
+docker compose up --build      # serves on http://localhost:8080
+```
+
+The container serves the built frontend and the API together; `./data` is mounted
+so the SQLite database persists across restarts.
+
+## Authentication (optional)
+
+Auth is **off by default** for frictionless local use. To require an admin
+sign-in, set `ADMIN_PASSWORD` (and optionally `SESSION_SECRET`) in `backend/.env`.
+When enabled, the frontend shows a login screen and all `/api` routes (except
+`/api/auth/*`, `/api/health`, `/api/webhooks/*`) require a signed bearer token.
+
+## Webhooks (optional)
+
+`POST /api/webhooks/square` receives Square notifications. When
+`SQUARE_WEBHOOK_SIGNATURE_KEY` and `SQUARE_WEBHOOK_URL` are set, payloads are
+HMAC-SHA256 verified (Square's scheme) and rejected with `401` if invalid.
+Received events are stored and shown on the **Sync Status** page. v1 records
+events; triggering incremental sync from a webhook is a future enhancement
+(manual sync remains the primary path).
+
 ## Pages
 
 1. **Dashboard Overview** — key metric cards for the current month.
@@ -169,6 +204,10 @@ GET  /api/sync/status
 POST /api/sync/mock
 POST /api/sync/square
 GET  /api/exports/monthly-fee.csv?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+GET  /api/auth/status
+POST /api/auth/login
+POST /api/webhooks/square
+GET  /api/webhooks/recent
 ```
 
 ---
@@ -188,10 +227,10 @@ GET  /api/exports/monthly-fee.csv?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 
 ---
 
-## Notes / scope (v1)
+## Notes / scope
 
-- No authentication yet.
-- No Docker required.
-- No cloud database or hosting.
-- No Square webhooks — manual sync only.
+- Authentication is optional (off by default; enable with `ADMIN_PASSWORD`).
+- Docker is optional — local dev needs only Node.
+- No cloud database; SQLite stays local. Single-port self-hosting is supported.
+- Square webhooks are received & verified; manual sync remains the primary path.
 - No destructive Square catalog changes — catalog editing is local-only for now.

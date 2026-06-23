@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from './AuthGate';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '📊', end: true },
@@ -10,6 +11,7 @@ const NAV = [
 ];
 
 export default function Sidebar() {
+  const { authRequired, logout } = useAuth();
   return (
     <aside className="w-64 shrink-0 bg-slate-900 text-slate-100 flex flex-col">
       <div className="px-5 py-5 border-b border-slate-700">
@@ -33,8 +35,16 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 text-xs text-slate-500 border-t border-slate-700">
-        Local-first · Sandbox mode
+      <div className="p-4 border-t border-slate-700 space-y-3">
+        {authRequired && (
+          <button
+            onClick={logout}
+            className="w-full rounded-md bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700"
+          >
+            Sign out
+          </button>
+        )}
+        <div className="text-xs text-slate-500">Local-first · Sandbox mode</div>
       </div>
     </aside>
   );

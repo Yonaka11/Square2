@@ -4,10 +4,11 @@ import MetricCard from '../components/MetricCard';
 import { Loading, ErrorState } from '../components/StateViews';
 import { api } from '../api/client';
 import { formatNumber } from '../lib/format';
-import type { SyncStatus as Status } from '../types';
+import type { SyncStatus as Status, WebhookEvent } from '../types';
 
 export default function SyncStatus() {
   const [data, setData] = useState<Status | null>(null);
+  const [webhooks, setWebhooks] = useState<WebhookEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -21,6 +22,7 @@ export default function SyncStatus() {
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+    api.getWebhookEvents().then(setWebhooks).catch(() => setWebhooks([]));
   };
 
   useEffect(load, []);
@@ -132,6 +134,44 @@ export default function SyncStatus() {
                   ))}
                   {data.recent.length === 0 && (
                     <tr><td colSpan={7} className="py-6 text-center text-slate-400">No sync history.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <h2 className="text-lg font-semibold mb-1">Recent Webhook Events</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Square notifications received at <code>POST /api/webhooks/square</code> (HMAC-verified when a signature key is configured).
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500 border-b border-slate-200">
+                    <th className="py-2 pr-4">Received</th>
+                    <th className="py-2 px-4">Type</th>
+                    <th className="py-2 px-4">Event ID</th>
+                    <th className="py-2 px-4 text-center">Signature</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {webhooks.map((w) => (
+                    <tr key={w.id}>
+                      <td className="py-2 pr-4">{new Date(w.receivedAt).toLocaleString()}</td>
+                      <td className="py-2 px-4">{w.eventType ?? '—'}</td>
+                      <td className="py-2 px-4 font-mono text-xs">{w.eventId ?? '—'}</td>
+                      <td className="py-2 px-4 text-center">
+                        {w.signatureValid ? (
+                          <span className="text-emerald-600">verified</span>
+                        ) : (
+                          <span className="text-amber-600">unverified</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {webhooks.length === 0 && (
+                    <tr><td colSpan={4} className="py-6 text-center text-slate-400">No webhook events received yet.</td></tr>
                   )}
                 </tbody>
               </table>

@@ -8,15 +8,41 @@ import type {
   ReportSnapshot,
   SalesAnalytics,
   SyncStatus,
+  WebhookEvent,
 } from '../types';
 
 const BASE = '/api';
+const TOKEN_KEY = 'sfd_token';
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+// Lets the AuthGate react when the server rejects a token (session expired).
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
+  if (res.status === 401 && !path.startsWith('/auth')) {
+    clearToken();
+    onUnauthorized?.();
+  }
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {
@@ -56,6 +82,13 @@ export const api = {
   getSyncStatus: () => request<SyncStatus>(`/sync/status`),
   syncMock: () => request(`/sync/mock`, { method: 'POST' }),
   syncSquare: () => request(`/sync/square`, { method: 'POST' }),
+  getWebhookEvents: () => request<WebhookEvent[]>(`/webhooks/recent`),
+  getAuthStatus: () => request<{ authRequired: boolean }>(`/auth/status`),
+  login: (password: string) =>
+    request<{ token: string; authRequired: boolean }>(`/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
   csvUrl: (startDate: string, endDate: string) =>
     `${BASE}/exports/monthly-fee.csv?startDate=${startDate}&endDate=${endDate}`,
 };

@@ -126,4 +126,15 @@ CREATE TABLE IF NOT EXISTS sync_logs (
   error TEXT,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS webhook_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id TEXT,
+  event_type TEXT,
+  merchant_id TEXT,
+  signature_valid INTEGER NOT NULL DEFAULT 0,
+  payload TEXT NOT NULL,
+  received_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_received ON webhook_events(received_at);
 `;

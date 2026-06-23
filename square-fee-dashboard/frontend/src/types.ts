@@ -105,6 +105,15 @@ export interface Category {
   name: string;
 }
 
+export interface WebhookEvent {
+  id: number;
+  eventId: string | null;
+  eventType: string | null;
+  merchantId: string | null;
+  signatureValid: number;
+  receivedAt: string;
+}
+
 export interface SyncStatus {
   lastSync: {
     syncType: string;
