@@ -28,10 +28,15 @@ that as the source of truth. Notes below are non-obvious caveats only.
   data** but preserves the `fee_rules` settings row.
 - **Money is always integer cents** end-to-end (DB, API, and frontend formatting).
   Never introduce floating-point currency.
-- **Square is mock-only in v1**: real sync (`backend/src/services/square/*`) is a
-  placeholder. `POST /api/sync/square` intentionally returns a helpful error when
-  credentials are missing and a 501 when present. Credentials go in
-  `backend/.env` (`SQUARE_ACCESS_TOKEN`, `SQUARE_ENVIRONMENT`, `SQUARE_LOCATION_ID`).
-- **Lint/typecheck/build**: each app has `npm run lint`, `npm run typecheck`; the
-  frontend also has `npm run build`. The frontend build (`tsc -b`) type-checks
-  `vite.config.ts`, which needs `@types/node` (already a devDependency).
+- **Square sync (read-only)**: implemented via direct REST calls in
+  `backend/src/services/square/*` (no Square SDK — keeps money in integer cents and
+  avoids SDK version churn). `POST /api/sync/square` runs catalog→orders→payments→
+  refunds and returns a helpful error if credentials are missing. Credentials go in
+  `backend/.env` (`SQUARE_ACCESS_TOKEN`, `SQUARE_ENVIRONMENT=sandbox`,
+  `SQUARE_LOCATION_ID`). Pure normalizers in `normalize.ts` are unit-tested
+  (`npm test` in `backend/`, uses Node's test runner via `tsx`), so the transform
+  logic can be verified without live Square access.
+- **Lint/typecheck/test/build**: backend has `npm run lint`, `npm run typecheck`,
+  `npm test`; frontend has `npm run lint`, `npm run typecheck`, `npm run build`. The
+  frontend build (`tsc -b`) type-checks `vite.config.ts`, which needs `@types/node`
+  (already a devDependency).

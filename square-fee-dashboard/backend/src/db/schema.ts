@@ -88,6 +88,14 @@ CREATE TABLE IF NOT EXISTS catalog_items (
   FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
+-- Maps Square catalog item-variation ids -> their item + category, so order
+-- line items (which reference variation ids) can be attributed to a category.
+CREATE TABLE IF NOT EXISTS catalog_variations (
+  variation_id TEXT PRIMARY KEY,
+  item_id TEXT,
+  category_id TEXT
+);
+
 CREATE TABLE IF NOT EXISTS fee_rules (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   fee_percentage REAL NOT NULL DEFAULT 25,

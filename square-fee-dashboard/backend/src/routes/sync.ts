@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/database.js';
 import { generateMockData } from '../mock/mockData.js';
 import { hasSquareCredentials, getSquareConfig } from '../services/square/squareClient.js';
+import { runSquareSync } from '../services/square/runSync.js';
 
 export const syncRouter = Router();
 
@@ -48,7 +49,8 @@ syncRouter.post('/mock', (_req, res) => {
   }
 });
 
-// POST /api/sync/square -> ready for real Square sync; safe error if creds missing
+// POST /api/sync/square -> run a real read-only Square sync (catalog/orders/
+// payments/refunds). Returns a safe, helpful error if credentials are missing.
 syncRouter.post('/square', async (_req, res) => {
   if (!hasSquareCredentials()) {
     const cfg = getSquareConfig();
@@ -61,10 +63,15 @@ syncRouter.post('/square', async (_req, res) => {
     return res.status(400).json({ status: 'error', error: msg });
   }
 
-  // Credentials exist but real sync is not implemented yet in v1.
-  const msg = 'Square sync is not implemented yet. Credentials detected; sync modules are placeholders.';
-  db.prepare(
-    `INSERT INTO sync_logs (sync_type, status, error, created_at) VALUES ('square', 'error', ?, ?)`
-  ).run(msg, new Date().toISOString());
-  res.status(501).json({ status: 'not_implemented', error: msg });
+  try {
+    const result = await runSquareSync();
+    res.json({ status: 'success', ...result });
+  } catch (err: any) {
+    const msg = String(err?.message ?? err);
+    db.prepare(
+      `INSERT INTO sync_logs (sync_type, status, error, created_at) VALUES ('square', 'error', ?, ?)`
+    ).run(msg, new Date().toISOString());
+    // 502: we reached our server but the upstream Square call failed.
+    res.status(502).json({ status: 'error', error: msg });
+  }
 });

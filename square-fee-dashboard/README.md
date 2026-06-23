@@ -79,15 +79,22 @@ Open **http://localhost:5173**.
   catalog items with some missing barcodes, and a category you can exclude).
 - **Re-seed anytime:** `npm run seed` in `backend/`, or click **Seed Mock Data**
   on the *Sync Status* page (`POST /api/sync/mock`).
-- **Enable Square Sandbox later:** fill in `backend/.env`:
+- **Enable Square Sandbox sync:** fill in `backend/.env`:
   ```
   SQUARE_ACCESS_TOKEN=...
   SQUARE_ENVIRONMENT=sandbox
   SQUARE_LOCATION_ID=...
   ```
-  Then `POST /api/sync/square`. Real sync logic lives in placeholder modules
-  (`backend/src/services/square/*`) and is intentionally not implemented yet; the
-  endpoint returns a helpful error until it is wired up.
+  Then `POST /api/sync/square` (or click **Sync from Square** on the Sync Status
+  page). This runs a **read-only** sync (catalog → orders → payments → refunds)
+  via Square's REST API and stores normalized data locally. Without credentials
+  the endpoint returns a helpful error and you can keep using mock data.
+
+  Implementation: `backend/src/services/square/` — `squareClient.ts` (authenticated
+  REST fetch), `normalize.ts` (pure Square→DB normalizers, unit-tested in
+  `normalize.test.ts`), and `sync{Catalog,Orders,Payments,Refunds}.ts` orchestrated
+  by `runSync.ts`. We call the REST API directly (no SDK) to keep money handling in
+  integer cents and avoid SDK version churn. No destructive Square writes are made.
 
 ---
 
@@ -157,6 +164,7 @@ GET  /api/exports/monthly-fee.csv?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 | ---------- | ----------------- | ------------------------------------ |
 | `backend/` | `npm run dev`     | Run API with hot reload (port 8080)  |
 | `backend/` | `npm run seed`    | (Re)seed mock data into SQLite       |
+| `backend/` | `npm test`        | Run Square normalization unit tests  |
 | `backend/` | `npm run typecheck` | Type-check the backend             |
 | `backend/` | `npm run lint`    | Lint the backend                     |
 | `frontend/`| `npm run dev`     | Run UI with hot reload (port 5173)   |
