@@ -58,8 +58,13 @@ export interface SquareCatalogObject {
   item_data?: {
     name?: string;
     description?: string;
+    // Square's category model, newest -> legacy:
+    //  - reporting_category: the single category used for reporting (preferred)
+    //  - categories[]: all categories assigned to the item (current model)
+    //  - category_id: deprecated single-category field (older accounts/API)
+    reporting_category?: { id?: string; ordinal?: number };
+    categories?: Array<{ id?: string; ordinal?: number }>;
     category_id?: string;
-    reporting_category?: { id?: string };
     variations?: Array<{
       id?: string;
       item_variation_data?: {
@@ -199,6 +204,20 @@ export interface NormalizedCatalog {
   }>;
 }
 
+/**
+ * Resolve a single local category id for an item, preferring Square's reporting
+ * category, then the first assigned category in the `categories[]` array, then
+ * the deprecated `category_id`. Returns null if none are present.
+ */
+export function resolveItemCategoryId(
+  itemData: NonNullable<SquareCatalogObject['item_data']>
+): string | null {
+  if (itemData.reporting_category?.id) return itemData.reporting_category.id;
+  const fromArray = (itemData.categories ?? []).find((c) => c.id)?.id;
+  if (fromArray) return fromArray;
+  return itemData.category_id ?? null;
+}
+
 /** Split a Square catalog object list into local categories + items. */
 export function normalizeCatalog(objects: SquareCatalogObject[]): NormalizedCatalog {
   const categories: Array<{ id: string; name: string }> = [];
@@ -211,7 +230,7 @@ export function normalizeCatalog(objects: SquareCatalogObject[]): NormalizedCata
     } else if (obj.type === 'ITEM' && obj.item_data) {
       const variations = obj.item_data.variations ?? [];
       const firstVar = variations[0]?.item_variation_data;
-      const categoryId = obj.item_data.reporting_category?.id ?? obj.item_data.category_id ?? null;
+      const categoryId = resolveItemCategoryId(obj.item_data);
       items.push({
         id: obj.id,
         name: obj.item_data.name ?? 'Unnamed item',
