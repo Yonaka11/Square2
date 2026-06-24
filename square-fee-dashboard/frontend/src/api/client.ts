@@ -80,7 +80,6 @@ export const api = {
     request<FeeRules>(`/settings/fee-rules`, { method: 'PUT', body: JSON.stringify(payload) }),
   getCategories: () => request<Category[]>(`/settings/categories`),
   getSyncStatus: () => request<SyncStatus>(`/sync/status`),
-  syncMock: () => request(`/sync/mock`, { method: 'POST' }),
   syncSquare: () => request(`/sync/square`, { method: 'POST' }),
   getWebhookEvents: () => request<WebhookEvent[]>(`/webhooks/recent`),
   getAuthStatus: () => request<{ authRequired: boolean }>(`/auth/status`),
