@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Leave Square vars blank to run on auto-seeded mock data.
+      # Square credentials are required to load data (no mock data).
       SQUARE_ACCESS_TOKEN: ${SQUARE_ACCESS_TOKEN:-}
       SQUARE_ENVIRONMENT: ${SQUARE_ENVIRONMENT:-sandbox}
       SQUARE_LOCATION_ID: ${SQUARE_LOCATION_ID:-}

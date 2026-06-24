@@ -54,9 +54,9 @@ npm run install:all   # installs backend + frontend deps
 npm run dev           # runs backend (8080) AND frontend (5173) together
 ```
 
-Then open **http://localhost:5173**. (No Square credentials needed — mock data is
-auto-seeded on first run.) Root scripts also available: `npm run seed`,
-`npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+Then open **http://localhost:5173**. The app uses **only real Square data** (no
+mock data): configure Square credentials (below) and run a sync to load data.
+Root scripts also: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
 
 Prefer running each service in its own terminal? Use the two-terminal flow below.
 
@@ -66,14 +66,13 @@ Prefer running each service in its own terminal? Use the two-terminal flow below
 
 ```bash
 cd backend
-cp .env.example .env        # optional; leave blank to use mock data
+cp .env.example .env        # fill in your Square credentials
 npm install
-npm run seed                # optional: (re)seed 90+ days of mock data
 npm run dev                 # starts http://localhost:8080
 ```
 
-> On first run, if the database has no orders, the backend **auto-seeds** mock
-> data so the dashboard is immediately usable without Square credentials.
+> The app uses only real Square data. On first run the database is empty until
+> you run a Square sync (`POST /api/sync/square` or the "Sync from Square" button).
 
 ### 2. Frontend
 
@@ -87,23 +86,21 @@ Open **http://localhost:5173**.
 
 ---
 
-## Mock data vs. Square
+## Data: Square only (no mock data)
 
-- **No Square credentials?** The app runs entirely on realistic mock data
-  (multiple orders/day across 90+ days, discounts, refunds, taxes, varied hours,
-  catalog items with some missing barcodes, and a category you can exclude).
-- **Re-seed anytime:** `npm run seed` in `backend/`, or click **Seed Mock Data**
-  on the *Sync Status* page (`POST /api/sync/mock`).
-- **Enable Square Sandbox sync:** fill in `backend/.env`:
+This app uses **only real Square data** — there is no mock/sample data.
+
+- **Configure credentials** in `backend/.env`:
   ```
   SQUARE_ACCESS_TOKEN=...
-  SQUARE_ENVIRONMENT=sandbox
+  SQUARE_ENVIRONMENT=sandbox      # use your live environment value for real data
   SQUARE_LOCATION_ID=...
   ```
-  Then `POST /api/sync/square` (or click **Sync from Square** on the Sync Status
-  page). This runs a **read-only** sync (catalog → orders → payments → refunds)
-  via Square's REST API and stores normalized data locally. Without credentials
-  the endpoint returns a helpful error and you can keep using mock data.
+- **Sync:** `POST /api/sync/square` (or click **Sync from Square** on the Sync
+  Status page). This runs a **read-only** sync (locations → catalog → orders →
+  payments → refunds) via Square's REST API and stores normalized data locally.
+  Without credentials the endpoint returns a helpful error and the dashboard
+  stays empty until a successful sync.
 
   Implementation: `backend/src/services/square/` — `squareClient.ts` (authenticated
   REST fetch), `normalize.ts` (pure Square→DB normalizers, unit-tested in
@@ -201,7 +198,6 @@ GET  /api/settings/fee-rules
 PUT  /api/settings/fee-rules
 GET  /api/settings/categories
 GET  /api/sync/status
-POST /api/sync/mock
 POST /api/sync/square
 GET  /api/exports/monthly-fee.csv?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 GET  /api/auth/status
@@ -217,8 +213,7 @@ GET  /api/webhooks/recent
 | Location   | Command           | Description                          |
 | ---------- | ----------------- | ------------------------------------ |
 | `backend/` | `npm run dev`     | Run API with hot reload (port 8080)  |
-| `backend/` | `npm run seed`    | (Re)seed mock data into SQLite       |
-| `backend/` | `npm test`        | Run Square normalization unit tests  |
+| `backend/` | `npm test`        | Run unit tests                       |
 | `backend/` | `npm run typecheck` | Type-check the backend             |
 | `backend/` | `npm run lint`    | Lint the backend                     |
 | `frontend/`| `npm run dev`     | Run UI with hot reload (port 5173)   |
