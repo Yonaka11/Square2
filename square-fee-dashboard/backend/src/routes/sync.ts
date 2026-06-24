@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { db } from '../db/database.js';
-import { generateMockData } from '../mock/mockData.js';
 import { hasSquareCredentials, getSquareConfig } from '../services/square/squareClient.js';
 import { runSquareSync } from '../services/square/runSync.js';
 
@@ -36,19 +35,6 @@ syncRouter.get('/status', (_req, res) => {
   res.json({ lastSync: lastSync ?? null, counts, recent, squareConfigured: hasSquareCredentials() });
 });
 
-// POST /api/sync/mock -> seed realistic mock data
-syncRouter.post('/mock', (_req, res) => {
-  try {
-    const result = generateMockData();
-    res.json({ status: 'success', ...result });
-  } catch (err: any) {
-    db.prepare(
-      `INSERT INTO sync_logs (sync_type, status, error, created_at) VALUES ('mock', 'error', ?, ?)`
-    ).run(String(err?.message ?? err), new Date().toISOString());
-    res.status(500).json({ status: 'error', error: String(err?.message ?? err) });
-  }
-});
-
 // POST /api/sync/square -> run a real read-only Square sync (catalog/orders/
 // payments/refunds). Returns a safe, helpful error if credentials are missing.
 syncRouter.post('/square', async (_req, res) => {
@@ -56,7 +42,7 @@ syncRouter.post('/square', async (_req, res) => {
     const cfg = getSquareConfig();
     const msg =
       'Square credentials are not configured. Set SQUARE_ACCESS_TOKEN and SQUARE_LOCATION_ID in backend/.env ' +
-      `(current environment: ${cfg.environment}). Until then, use "Seed mock data" instead.`;
+      `(current environment: ${cfg.environment}).`;
     db.prepare(
       `INSERT INTO sync_logs (sync_type, status, error, created_at) VALUES ('square', 'error', ?, ?)`
     ).run(msg, new Date().toISOString());

@@ -27,20 +27,6 @@ export default function SyncStatus() {
 
   useEffect(load, []);
 
-  const seedMock = async () => {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await api.syncMock();
-      setMsg('Mock data re-seeded successfully.');
-      load();
-    } catch (e: any) {
-      setMsg(`Mock seed failed: ${e.message}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const syncSquare = async () => {
     setBusy(true);
     setMsg(null);
@@ -58,14 +44,11 @@ export default function SyncStatus() {
   return (
     <Layout
       title="Sync Status"
-      subtitle="Manual data sync (mock or Square Sandbox)"
+      subtitle="Manual read-only sync from Square"
       actions={
         <div className="flex gap-2">
-          <button onClick={seedMock} disabled={busy} className="rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-            Seed Mock Data
-          </button>
-          <button onClick={syncSquare} disabled={busy} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50">
-            Sync from Square
+          <button onClick={syncSquare} disabled={busy} className="rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+            {busy ? 'Syncing…' : 'Sync from Square'}
           </button>
         </div>
       }
@@ -79,7 +62,7 @@ export default function SyncStatus() {
           <div className={`rounded-lg px-4 py-3 text-sm ${data.squareConfigured ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
             {data.squareConfigured
               ? 'Square credentials detected. Click "Sync from Square" to import catalog, orders, payments, and refunds (read-only).'
-              : 'No Square credentials configured — running on mock data. Add credentials in backend/.env to enable Square sync.'}
+              : 'No Square credentials configured. Add credentials in backend/.env, then run a sync to load data.'}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

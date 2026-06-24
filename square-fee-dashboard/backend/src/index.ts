@@ -6,7 +6,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, initDb, getDbPath } from './db/database.js';
-import { generateMockData } from './mock/mockData.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { reportsRouter } from './routes/reports.js';
 import { catalogRouter } from './routes/catalog.js';
@@ -25,13 +24,11 @@ const SERVE_STATIC = process.env.SERVE_STATIC === 'true' || process.env.NODE_ENV
 
 initDb();
 
-// First-run convenience: if there are no orders yet, seed mock data so the
-// dashboard is immediately usable without Square credentials.
+// Real Square data only: no mock data is ever generated. If the database is
+// empty, run a Square sync (POST /api/sync/square or "Sync from Square" button).
 const orderCount = (db.prepare('SELECT COUNT(*) AS n FROM orders').get() as any).n as number;
 if (orderCount === 0) {
-  console.log('No orders found - seeding mock data on first run...');
-  const result = generateMockData();
-  console.log(`Seeded ${result.orders} orders, ${result.lineItems} line items, ${result.refunds} refunds.`);
+  console.log('Database is empty. Run a Square sync to import live data (POST /api/sync/square).');
 }
 
 const app = express();

@@ -11,7 +11,7 @@ that as the source of truth. Notes below are non-obvious caveats only.
 
 - **One command (preferred)**: from `square-fee-dashboard/`, run `npm run dev` to
   start backend + frontend together (uses `concurrently`). `npm run install:all`
-  installs both. Root also exposes `seed`, `test`, `lint`, `typecheck`, `build`.
+  installs both. Root also exposes `test`, `lint`, `typecheck`, `build`.
 - **Backend** (`square-fee-dashboard/backend`, Express + TypeScript on port 8080):
   `npm run dev`. Run it from the `backend/` directory.
 - **Frontend** (`square-fee-dashboard/frontend`, Vite + React on port 5173):
@@ -24,11 +24,10 @@ that as the source of truth. Notes below are non-obvious caveats only.
 - **Database / SQLite**: uses `better-sqlite3` (a native module). It is the chosen
   local SQLite layer instead of Prisma (no codegen / engine download). The DB file
   lives at `square-fee-dashboard/data/square_dashboard.db` and is git-ignored.
-- **Auto-seed on first run**: when the backend starts and finds zero orders, it
-  automatically seeds 90+ days of mock data. So a fresh clone "just works" with no
-  Square credentials. To force a re-seed, run `npm run seed` in `backend/` or
-  `POST /api/sync/mock`. Re-seeding **clears existing transactional + catalog
-  data** but preserves the `fee_rules` settings row.
+- **Real Square data only**: there is NO mock/sample data and no auto-seed. A fresh
+  database is empty until a Square sync runs (`POST /api/sync/square` or the
+  "Sync from Square" button). Square credentials are therefore required to load
+  any data.
 - **Money is always integer cents** end-to-end (DB, API, and frontend formatting).
   Never introduce floating-point currency.
 - **Square sync (read-only)**: implemented via direct REST calls in
